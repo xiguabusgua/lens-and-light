@@ -141,6 +141,25 @@ export async function initializeDatabase(): Promise<void> {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS hero_slides (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      title VARCHAR(200) NOT NULL,
+      subtitle VARCHAR(200),
+      image_url VARCHAR(1000) NOT NULL,
+      description TEXT,
+      button_text VARCHAR(100),
+      button_link VARCHAR(1000),
+      transition_effect VARCHAR(50) DEFAULT 'fade',
+      transition_speed INT DEFAULT 1200,
+      autoplay_delay INT DEFAULT 5000,
+      sort_order INT DEFAULT 0,
+      is_active TINYINT DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
   try { await pool.execute('CREATE INDEX idx_works_category ON works(category)'); } catch {}
   try { await pool.execute('CREATE INDEX idx_works_featured ON works(featured)'); } catch {}
   try { await pool.execute('CREATE INDEX idx_works_status ON works(status)'); } catch {}
@@ -221,6 +240,21 @@ export async function initializeDatabase(): Promise<void> {
     const awLinks = [[1,1,1],[1,4,2],[1,9,3],[2,3,1],[2,7,2],[2,10,3],[3,2,1],[3,6,2],[3,5,3]];
     for (const [aid, wid, so] of awLinks) {
       await pool.execute('INSERT INTO album_works (album_id, work_id, sort_order) VALUES (?, ?, ?)', [aid, wid, so]);
+    }
+  }
+
+  const [heroRow] = await pool.execute('SELECT COUNT(*) as count FROM hero_slides') as [any[], any];
+  if (heroRow[0].count === 0) {
+    const heroSlides = [
+      ['晨曦中的城市', 'LIGHT', 'https://picsum.photos/seed/photo1/1920/1280', '清晨五点的城市天际线，第一缕阳光穿透云层，为钢铁森林镀上金色', '探索更多', '/portfolio', 'fade', 1200, 5000, 1, 1],
+      ['时光肖像', 'TIME', 'https://picsum.photos/seed/photo2/1280/1920', '岁月在脸上留下的每一道痕迹，都是生命最美的诗行', '探索更多', '/portfolio', 'slide', 1000, 5000, 2, 1],
+      ['山间云海', 'NATURE', 'https://picsum.photos/seed/photo4/1920/1280', '站在山巅俯瞰云海翻涌，仿佛置身于天地之间', '探索更多', '/portfolio', 'fade', 1200, 5000, 3, 1]
+    ];
+    for (const h of heroSlides) {
+      await pool.execute(
+        'INSERT INTO hero_slides (title, subtitle, image_url, description, button_text, button_link, transition_effect, transition_speed, autoplay_delay, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        h
+      );
     }
   }
 

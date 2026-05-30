@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Routes, Route, Navigate, useNavigate, Outlet, NavLink, Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import { LayoutDashboard, Images, Plus, ExternalLink, LogOut, Menu, User, LayoutGrid, ChevronRight, Tags, FolderTree, BookOpen, Info, HardDrive, Palette } from 'lucide-react';
+import { LayoutDashboard, Images, Plus, ExternalLink, LogOut, Menu, User, LayoutGrid, ChevronRight, Tags, FolderTree, BookOpen, Info, HardDrive, Palette, Image } from 'lucide-react';
 import { getFullImageUrl } from '@/lib/utils';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import Dashboard from './pages/Dashboard';
@@ -11,6 +11,7 @@ import LayoutSettings from './pages/LayoutSettings';
 import CategoryManagement from './pages/CategoryManagement';
 import TagManagement from './pages/TagManagement';
 import AlbumManagement from './pages/AlbumManagement';
+import HeroSlideManagement from './pages/HeroSlideManagement';
 import AboutManagement from './pages/AboutManagement';
 import MediaLibrary from './pages/MediaLibrary';
 import ThemeSettings from './pages/ThemeSettings';
@@ -28,6 +29,7 @@ export default function AdminApp() {
         <Route path="categories" element={<CategoryManagement />} />
         <Route path="tags" element={<TagManagement />} />
         <Route path="albums" element={<AlbumManagement />} />
+        <Route path="hero-slides" element={<HeroSlideManagement />} />
         <Route path="about" element={<AboutManagement />} />
         <Route path="media" element={<MediaLibrary />} />
         <Route path="settings" element={<LayoutSettings />} />
@@ -138,6 +140,7 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
       ]
     },
     { to: '/admin/albums', icon: BookOpen, label: '相册管理' },
+    { to: '/admin/hero-slides', icon: Image, label: '轮播图管理' },
     { to: '/admin/about', icon: Info, label: '关于页面' },
     { to: '/admin/media', icon: HardDrive, label: '媒体库' },
     { to: '/admin/categories', icon: FolderTree, label: '分类管理' },

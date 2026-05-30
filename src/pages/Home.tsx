@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { EffectFade, Autoplay, Pagination } from 'swiper/modules';
+import { EffectFade, EffectCoverflow, EffectCube, EffectFlip, EffectCards, Autoplay, Pagination, Keyboard } from 'swiper/modules';
 import { motion, useInView } from 'framer-motion';
 import { useInView as useInViewObserver } from 'react-intersection-observer';
 import { ArrowRight, ChevronDown, Grid3X3, User, Mountain, Camera, Briefcase, Tag as TagIcon, Loader2 } from 'lucide-react';
@@ -15,6 +15,10 @@ import ResponsiveImage from '@/components/ResponsiveImage';
 
 import 'swiper/css';
 import 'swiper/css/effect-fade';
+import 'swiper/css/effect-coverflow';
+import 'swiper/css/effect-cube';
+import 'swiper/css/effect-flip';
+import 'swiper/css/effect-cards';
 import 'swiper/css/pagination';
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -125,30 +129,39 @@ const tagVariants = { hidden: { opacity: 0, y: 20, filter: "blur(8px)" }, visibl
 const descriptionVariants = { hidden: { opacity: 0, y: 20, filter: "blur(6px)" }, visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.7, delay: 0.2 } } };
 const ctaVariants = { hidden: { opacity: 0, scale: 0.9, filter: "blur(4px)" }, visible: { opacity: 1, scale: 1, filter: "blur(0px)", transition: { duration: 0.6, delay: 0.5 } } };
 
+interface HeroSlide {
+  id: number;
+  title: string;
+  subtitle: string | null;
+  image_url: string;
+  description: string | null;
+  button_text: string | null;
+  button_link: string | null;
+  transition_effect: string;
+  transition_speed: number;
+  autoplay_delay: number;
+  sort_order: number;
+  is_active: number;
+}
+
 function HeroSection() {
-  const [featuredWorks, setFeaturedWorks] = useState<{ title: string; imageUrl: string; description: string }[]>([]);
+  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([]);
   const [heroLoading, setHeroLoading] = useState(true);
   const parallaxBg = useParallax(0.3);
   const parallaxText = useParallax(0.12);
 
   useEffect(() => {
-    axios.get('/api/works', { params: { featured: 'true', status: 'active', limit: 5 } })
+    axios.get('/api/hero-slides', { params: { status: 'active', sort: 'sort_order' } })
       .then(res => {
         const data = res.data.data || [];
         if (data.length > 0) {
-          setFeaturedWorks(data.map((w: ApiWork) => ({
-            title: w.title,
-            imageUrl: w.image_url,
-            description: w.description || ''
-          })));
+          setHeroSlides(data);
         } else {
-          const staticWorks = getFeaturedWorks();
-          setFeaturedWorks(staticWorks.map(w => ({ title: w.title, imageUrl: w.imageUrl, description: w.description })));
+          setHeroSlides([]);
         }
       })
       .catch(() => {
-        const staticWorks = getFeaturedWorks();
-        setFeaturedWorks(staticWorks.map(w => ({ title: w.title, imageUrl: w.imageUrl, description: w.description })));
+        setHeroSlides([]);
       })
       .finally(() => setHeroLoading(false));
   }, []);
@@ -161,47 +174,24 @@ function HeroSection() {
     );
   }
 
-  if (featuredWorks.length === 0) return null;
+  if (heroSlides.length === 0) return null;
+
+  const allModules = [Autoplay, Pagination, Keyboard, EffectFade, EffectCoverflow, EffectCube, EffectFlip, EffectCards];
 
   return (
     <section className="relative h-screen w-full overflow-hidden">
-      <Swiper
-        modules={[EffectFade, Autoplay, Pagination]}
-        effect="fade"
-        fadeEffect={{ crossFade: true }}
-        loop={true}
-        speed={1200}
-        autoplay={{ delay: 5000, disableOnInteraction: false }}
-        pagination={{ clickable: true, bulletClass: 'swiper-pagination-bullet-custom', bulletActiveClass: 'swiper-pagination-bullet-active-custom' }}
-        className="h-full w-full"
-      >
-        {featuredWorks.map((work, index) => (
-          <SwiperSlide key={index} className="relative">
-            <div className="absolute inset-0" style={{ transform: `translateY(${parallaxBg}px)` }}>
-              <ResponsiveImage src={work.imageUrl} alt={work.title} className="w-full h-full object-cover" loading="eager" priority />
-            </div>
+      {heroSlides.map((slide) => (
+        <HeroSwiper
+          key={slide.id}
+          slides={heroSlides}
+          slide={slide}
+          modules={allModules}
+          parallaxBg={parallaxBg}
+          parallaxText={parallaxText}
+        />
+      ))}
 
-            <div className="absolute inset-0 bg-black/50" />
-            <FloatingParticles />
-
-            <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-4" style={{ transform: `translateY(${parallaxText}px)` }}>
-              <motion.div variants={heroTextVariants} initial="hidden" animate="visible">
-                <motion.span variants={tagVariants} className="font-ui uppercase tracking-widest text-accent text-sm mb-6">精选作品</motion.span>
-                <AnimatedTitle text={work.title} />
-                <motion.p variants={descriptionVariants} className="font-body text-body-lg italic text-white/90 max-w-2xl mb-10">{work.description}</motion.p>
-                <motion.div variants={ctaVariants}>
-                  <div className="flex flex-wrap items-center justify-center gap-4">
-                    <Link to="/portfolio" className="inline-flex items-center gap-2 px-8 py-4 border-2 border-accent text-accent font-ui text-sm font-medium uppercase tracking-widest hover:bg-accent hover:text-primary transition-all duration-500 group">探索更多 <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" /></Link>
-                    <Link to="/about" className="inline-flex items-center gap-2 px-8 py-4 border-2 border-white/30 text-white/80 font-ui text-sm font-medium uppercase tracking-widest hover:border-white hover:text-white transition-all duration-500 group">关于我 <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" /></Link>
-                  </div>
-                </motion.div>
-              </motion.div>
-            </div>
-          </SwiperSlide>
-        ))}
-      </Swiper>
-
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1, delay: 1.5 }} className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2.5">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1, delay: 1.5 }} className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2.5 pointer-events-none">
         <span className="font-ui text-[10px] uppercase tracking-[0.3em] text-white/40 select-none">Scroll</span>
         <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}>
           <ChevronDown size={20} className="text-accent/60" />
@@ -213,6 +203,78 @@ function HeroSection() {
         .swiper-pagination-bullet-active-custom { width: 48px !important; background: rgb(var(--color-accent)) !important; }
       `}</style>
     </section>
+  );
+}
+
+function HeroSwiper({ 
+  slides, 
+  slide, 
+  modules,
+  parallaxBg, 
+  parallaxText 
+}: { 
+  slides: HeroSlide[];
+  slide: HeroSlide;
+  modules: any[];
+  parallaxBg: number;
+  parallaxText: number;
+}) {
+  const getEffect = () => {
+    switch (slide.transition_effect) {
+      case 'slide': return { effect: 'slide' as const };
+      case 'coverflow': return { effect: 'coverflow' as const, coverflowEffect: { rotate: 50, stretch: 0, depth: 100, modifier: 1, slideShadows: true } };
+      case 'cube': return { effect: 'cube' as const, cubeEffect: { shadow: true, slideShadows: true, shadowOffset: 20, shadowScale: 0.94 } };
+      case 'flip': return { effect: 'flip' as const };
+      case 'cards': return { effect: 'cards' as const };
+      default: return { effect: 'fade' as const, fadeEffect: { crossFade: true } };
+    }
+  };
+
+  const effectConfig = getEffect();
+
+  return (
+    <Swiper
+      modules={modules}
+      {...effectConfig}
+      speed={slide.transition_speed}
+      loop={true}
+      autoplay={{ delay: slide.autoplay_delay, disableOnInteraction: false }}
+      pagination={{ clickable: true, bulletClass: 'swiper-pagination-bullet-custom', bulletActiveClass: 'swiper-pagination-bullet-active-custom' }}
+      keyboard={{ enabled: true }}
+      navigation={false}
+      className="h-full w-full absolute inset-0"
+    >
+      {slides.map((s, index) => (
+        <SwiperSlide key={s.id || index} className="relative">
+          <div className="absolute inset-0" style={{ transform: `translateY(${parallaxBg}px)` }}>
+            <ResponsiveImage src={s.image_url} alt={s.title} className="w-full h-full object-cover" loading={index === 0 ? "eager" : "lazy"} priority={index === 0} />
+          </div>
+
+          <div className="absolute inset-0 bg-black/50" />
+          <FloatingParticles />
+
+          <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-4" style={{ transform: `translateY(${parallaxText}px)` }}>
+            <motion.div variants={heroTextVariants} initial="hidden" animate="visible">
+              {s.subtitle && (
+                <motion.span variants={tagVariants} className="font-ui uppercase tracking-widest text-accent text-sm mb-6">{s.subtitle}</motion.span>
+              )}
+              <AnimatedTitle text={s.title} />
+              {s.description && (
+                <motion.p variants={descriptionVariants} className="font-body text-body-lg italic text-white/90 max-w-2xl mb-10">{s.description}</motion.p>
+              )}
+              {s.button_text && (
+                <motion.div variants={ctaVariants}>
+                  <div className="flex flex-wrap items-center justify-center gap-4">
+                    <Link to={s.button_link || '/portfolio'} className="inline-flex items-center gap-2 px-8 py-4 border-2 border-accent text-accent font-ui text-sm font-medium uppercase tracking-widest hover:bg-accent hover:text-primary transition-all duration-500 group">{s.button_text} <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" /></Link>
+                    <Link to="/about" className="inline-flex items-center gap-2 px-8 py-4 border-2 border-white/30 text-white/80 font-ui text-sm font-medium uppercase tracking-widest hover:border-white hover:text-white transition-all duration-500 group">关于我 <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" /></Link>
+                  </div>
+                </motion.div>
+              )}
+            </motion.div>
+          </div>
+        </SwiperSlide>
+      ))}
+    </Swiper>
   );
 }
 
