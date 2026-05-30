@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Camera, Loader2, Calendar, Image } from 'lucide-react';
 import axios from 'axios';
-import { getFullImageUrl, getResponsiveImage, type ApiAlbum } from '@/lib/utils';
+import { getFullImageUrl, type ApiAlbum } from '@/lib/utils';
+import ResponsiveImage from '@/components/ResponsiveImage';
 
 interface Album extends ApiAlbum {
   work_count: number;
@@ -55,8 +56,8 @@ export default function Albums() {
                     <div className="group relative overflow-hidden rounded-lg bg-primary-light border border-surface hover:border-accent/50 transition-all duration-300">
                       {album.cover_url ? (
                         <div className="aspect-[4/3] overflow-hidden">
-                          <img
-                            {...getResponsiveImage(album.cover_url)}
+                          <ResponsiveImage
+                            src={album.cover_url}
                             alt={album.title}
                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                             loading="lazy"

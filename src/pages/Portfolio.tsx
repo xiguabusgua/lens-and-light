@@ -3,8 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Pause, ChevronLeft, ChevronRight, Calendar, Clock, Camera, Tag as TagIcon, Loader2, Search, X, AlertCircle } from 'lucide-react';
 import axios from 'axios';
-import { cn, getFullImageUrl, getCategoryLabel, handleApiError, getResponsiveImage, type ApiWork } from '@/lib/utils';
+import { cn, getFullImageUrl, getCategoryLabel, handleApiError, type ApiWork } from '@/lib/utils';
 import { getLayoutConfig, type LayoutMode } from '@/config/layout';
+import ResponsiveImage from '@/components/ResponsiveImage';
 
 interface Work extends ApiWork {}
 
@@ -32,8 +33,8 @@ function WorkCard({ work, className, style }: { work: Work; className?: string; 
       aria-label={`查看作品：${work.title}`}
       style={style}
     >
-      <img
-        {...getResponsiveImage(work.thumbnail_url || work.image_url)}
+      <ResponsiveImage
+        src={work.thumbnail_url || work.image_url}
         alt={work.title}
         loading="lazy"
         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
@@ -358,8 +359,8 @@ function TimelineLayout({ filteredWorks }: { filteredWorks: Work[] }) {
                 transition={{ duration: 0.5, delay: monthIdx * 0.1 + idx * 0.05 }}
               >
                 <div style={{ position: 'relative', overflow: 'hidden', borderRadius: '10px', border: '1px solid #222', background: '#151515' }}>
-                  <img
-                    {...getResponsiveImage(work.thumbnail_url || work.image_url)}
+                  <ResponsiveImage
+                    src={work.thumbnail_url || work.image_url}
                     alt={work.title}
                     loading="lazy"
                     style={{ width: '100%', aspectRatio: '4/3', objectFit: 'cover' }}

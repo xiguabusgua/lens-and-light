@@ -19,8 +19,9 @@ import {
   Edit2,
   Loader2,
 } from 'lucide-react';
-import { cn, getFullImageUrl, handleApiError, getResponsiveImage, type ApiWork } from '@/lib/utils';
+import { cn, getFullImageUrl, handleApiError, type ApiWork } from '@/lib/utils';
 import axios from 'axios';
+import ResponsiveImage from '@/components/ResponsiveImage';
 
 interface Work extends ApiWork {}
 
@@ -265,12 +266,13 @@ export default function WorkDetail() {
 
         <motion.img
           key={work.id}
-          {...getResponsiveImage(work.image_url)}
+          src={getFullImageUrl(work.image_url)}
           alt={work.title}
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4, ease: 'easeOut' }}
           className="max-h-[95vh] max-w-[95vw] object-contain"
+          loading="eager"
         />
       </div>
     );
@@ -330,20 +332,15 @@ export default function WorkDetail() {
                 className="relative w-full h-full"
               >
                 {!imageLoaded && <ImageSkeleton />}
-                <motion.img
-                  {...getResponsiveImage(work.image_url)}
+                <ResponsiveImage
+                  src={work.image_url}
                   alt={work.title}
-                  onLoad={() => setImageLoaded(true)}
-                  initial={{ opacity: 0, scale: 0.98 }}
-                  animate={{
-                    opacity: imageLoaded ? 1 : 0,
-                    scale: imageLoaded ? 1 : 0.98,
-                  }}
-                  transition={{
-                    opacity: { duration: 0.4, ease: 'easeOut' },
-                    scale: { duration: 0.45, ease: [0.34, 1.56, 0.64, 1] },
-                  }}
                   className="w-full h-full object-contain rounded-sm"
+                  onLoad={() => setImageLoaded(true)}
+                  style={{
+                    opacity: imageLoaded ? 1 : 0,
+                    transform: imageLoaded ? 'scale(1)' : 'scale(0.98)',
+                  }}
                 />
               </motion.div>
             </AnimatePresence>

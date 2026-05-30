@@ -20,7 +20,8 @@ import {
   Tag as TagIcon,
   Loader2,
 } from 'lucide-react';
-import { cn, handleApiError, getResponsiveImage } from '@/lib/utils';
+import { cn, handleApiError, getFullImageUrl } from '@/lib/utils';
+import ResponsiveImage from '@/components/ResponsiveImage';
 import axios from 'axios';
 
 interface Work {
@@ -656,24 +657,16 @@ export default function Gallery() {
             }
           >
             {!imageLoaded && <EnhancedSkeleton />}
-            <motion.img
-              {...getResponsiveImage(currentWork.image_url)}
+            <ResponsiveImage
+              src={currentWork.image_url}
               alt={currentWork.title}
-              loading="eager"
-              onLoad={() => setImageLoaded(true)}
-              initial={{ opacity: 0 }}
-              animate={{
-                opacity: imageLoaded ? 1 : 0,
-                scale: imageLoaded ? [0.98, 1.01, 1] : 1,
-              }}
-              transition={{
-                opacity: { duration: 0.4, ease: 'easeOut' },
-                scale: { duration: 0.45, delay: 0.05, ease: [0.34, 1.56, 0.64, 1] },
-              }}
               className={cn(
                 'max-h-[85vh] w-auto max-w-[90vw] object-contain rounded-sm relative z-[1]',
                 isFlipMode && 'backface-hidden'
               )}
+              loading="eager"
+              priority
+              onLoad={() => setImageLoaded(true)}
               style={isFlipMode ? { backfaceVisibility: 'hidden' as const } : undefined}
             />
             {imageLoaded && showShine && <ImageShine />}

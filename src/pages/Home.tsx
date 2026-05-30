@@ -8,9 +8,10 @@ import { ArrowRight, ChevronDown, Grid3X3, User, Mountain, Camera, Briefcase, Ta
 import { getFeaturedWorks } from '../data/works';
 import type { Work } from '../data/works';
 import { categories } from '../data/categories';
-import { getFullImageUrl, getCategoryLabel, getResponsiveImage } from '@/lib/utils';
+import { getFullImageUrl, getCategoryLabel } from '@/lib/utils';
 import type { ApiWork } from '@/lib/utils';
 import axios from 'axios';
+import ResponsiveImage from '@/components/ResponsiveImage';
 
 import 'swiper/css';
 import 'swiper/css/effect-fade';
@@ -177,7 +178,7 @@ function HeroSection() {
         {featuredWorks.map((work, index) => (
           <SwiperSlide key={index} className="relative">
             <div className="absolute inset-0" style={{ transform: `translateY(${parallaxBg}px)` }}>
-              <img {...getResponsiveImage(work.imageUrl)} alt={work.title} className="w-full h-full object-cover" loading="eager" />
+              <ResponsiveImage src={work.imageUrl} alt={work.title} className="w-full h-full object-cover" loading="eager" priority />
             </div>
 
             <div className="absolute inset-0 bg-black/50" />
@@ -268,8 +269,8 @@ function WorksPreview() {
                   style={{ aspectRatio: index % 3 === 0 ? undefined : '4/5' }}
                 >
                   <Link to={`/work/${work.id}`} className="block w-full h-full relative">
-                    <img
-                      {...getResponsiveImage(work.thumbnail_url || work.image_url)}
+                    <ResponsiveImage
+                      src={work.thumbnail_url || work.image_url}
                       alt={work.title}
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                       loading="lazy"
