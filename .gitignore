@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+.DS_Store
+*.log
+
+# API
+api/node_modules/
+api/dist/
+api/uploads/
+api/data/database.sqlite*
+api/.env
