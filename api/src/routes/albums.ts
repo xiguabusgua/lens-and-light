@@ -14,9 +14,9 @@ const publicLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-router.get('/', publicLimiter, (_req: Request, res: Response): void => {
+router.get('/', publicLimiter, async (_req: Request, res: Response): Promise<void> => {
   try {
-    const albums = AlbumModel.findAll();
+    const albums = await AlbumModel.findAll();
     res.json({
       success: true,
       data: albums
@@ -27,10 +27,10 @@ router.get('/', publicLimiter, (_req: Request, res: Response): void => {
   }
 });
 
-router.get('/:slug', publicLimiter, (req: Request, res: Response): void => {
+router.get('/:slug', publicLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const { slug } = req.params;
-    const album = AlbumModel.findBySlug(slug);
+    const album = await AlbumModel.findBySlug(slug);
 
     if (!album) {
       res.status(404).json({ error: '相册不存在' });
@@ -47,17 +47,17 @@ router.get('/:slug', publicLimiter, (req: Request, res: Response): void => {
   }
 });
 
-router.get('/:slug/works', publicLimiter, (req: Request, res: Response): void => {
+router.get('/:slug/works', publicLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const { slug } = req.params;
-    const album = AlbumModel.findBySlug(slug);
+    const album = await AlbumModel.findBySlug(slug);
 
     if (!album) {
       res.status(404).json({ error: '相册不存在' });
       return;
     }
 
-    const works = AlbumModel.getWorksBySlug(slug);
+    const works = await AlbumModel.getWorksBySlug(slug);
     res.json({
       success: true,
       data: works
@@ -68,7 +68,7 @@ router.get('/:slug/works', publicLimiter, (req: Request, res: Response): void =>
   }
 });
 
-router.post('/', authenticateToken, (req: Request, res: Response): void => {
+router.post('/', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
     const input: CreateAlbumInput = req.body;
 
@@ -77,13 +77,13 @@ router.post('/', authenticateToken, (req: Request, res: Response): void => {
       return;
     }
 
-    const existing = AlbumModel.findBySlug(input.slug);
+    const existing = await AlbumModel.findBySlug(input.slug);
     if (existing) {
       res.status(409).json({ error: '相册 slug 已存在' });
       return;
     }
 
-    const album = AlbumModel.create(input);
+    const album = await AlbumModel.create(input);
 
     res.status(201).json({
       success: true,
@@ -96,7 +96,7 @@ router.post('/', authenticateToken, (req: Request, res: Response): void => {
   }
 });
 
-router.put('/:id', authenticateToken, (req: Request, res: Response): void => {
+router.put('/:id', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
     const id = parseInt(req.params.id);
 
@@ -106,7 +106,7 @@ router.put('/:id', authenticateToken, (req: Request, res: Response): void => {
     }
 
     const input: UpdateAlbumInput = req.body;
-    const updated = AlbumModel.update(id, input);
+    const updated = await AlbumModel.update(id, input);
 
     if (!updated) {
       res.status(404).json({ error: '相册不存在' });
@@ -124,7 +124,7 @@ router.put('/:id', authenticateToken, (req: Request, res: Response): void => {
   }
 });
 
-router.delete('/:id', authenticateToken, (req: Request, res: Response): void => {
+router.delete('/:id', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
     const id = parseInt(req.params.id);
 
@@ -133,13 +133,13 @@ router.delete('/:id', authenticateToken, (req: Request, res: Response): void => 
       return;
     }
 
-    const album = AlbumModel.findById(id);
+    const album = await AlbumModel.findById(id);
     if (!album) {
       res.status(404).json({ error: '相册不存在' });
       return;
     }
 
-    AlbumModel.delete(id);
+    await AlbumModel.delete(id);
 
     res.json({
       success: true,
@@ -151,7 +151,7 @@ router.delete('/:id', authenticateToken, (req: Request, res: Response): void => 
   }
 });
 
-router.post('/:id/works', authenticateToken, (req: Request, res: Response): void => {
+router.post('/:id/works', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
     const id = parseInt(req.params.id);
 
@@ -167,10 +167,10 @@ router.post('/:id/works', authenticateToken, (req: Request, res: Response): void
       return;
     }
 
-    const success = AlbumModel.addWork(id, work_id, sort_order);
+    const success = await AlbumModel.addWork(id, work_id, sort_order);
 
     if (!success) {
-      const album = AlbumModel.findById(id);
+      const album = await AlbumModel.findById(id);
       if (!album) {
         res.status(404).json({ error: '相册不存在' });
         return;
@@ -189,7 +189,7 @@ router.post('/:id/works', authenticateToken, (req: Request, res: Response): void
   }
 });
 
-router.delete('/:id/works/:workId', authenticateToken, (req: Request, res: Response): void => {
+router.delete('/:id/works/:workId', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
     const id = parseInt(req.params.id);
     const workId = parseInt(req.params.workId);
@@ -199,13 +199,13 @@ router.delete('/:id/works/:workId', authenticateToken, (req: Request, res: Respo
       return;
     }
 
-    const album = AlbumModel.findById(id);
+    const album = await AlbumModel.findById(id);
     if (!album) {
       res.status(404).json({ error: '相册不存在' });
       return;
     }
 
-    const success = AlbumModel.removeWork(id, workId);
+    const success = await AlbumModel.removeWork(id, workId);
 
     if (!success) {
       res.status(404).json({ error: '作品不在该相册中' });

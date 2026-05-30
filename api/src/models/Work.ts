@@ -1,8 +1,8 @@
-import db from '../config/database.js';
+import { get, all, run, transaction } from '../config/database.js';
 import { Work, CreateWorkInput, UpdateWorkInput, ReorderItem, PaginatedResponse, Tag } from '../types/index.js';
 
 export class WorkModel {
-  static findAll(params: {
+  static async findAll(params: {
     category?: string;
     featured?: string;
     status?: string;
@@ -12,7 +12,7 @@ export class WorkModel {
     limit?: number;
     search?: string;
     tag?: string;
-  }): PaginatedResponse<Work> {
+  }): Promise<PaginatedResponse<Work>> {
     const {
       category,
       featured,
@@ -57,12 +57,13 @@ export class WorkModel {
       whereValues.push(tag.trim());
     }
 
-    const whereClause = whereConditions.length > 0 
-      ? `WHERE ${whereConditions.join(' AND ')}` 
+    const whereClause = whereConditions.length > 0
+      ? `WHERE ${whereConditions.join(' AND ')}`
       : '';
 
     const countQuery = `SELECT COUNT(*) as total FROM works ${whereClause}`;
-    const { total } = db.prepare(countQuery).get(...whereValues) as { total: number };
+    const countResult = await get<{ total: number }>(countQuery, whereValues.length > 0 ? whereValues : undefined);
+    const total = countResult?.total ?? 0;
 
     const offset = (page - 1) * limit;
     const allowedSortFields = ['sort_order', 'created_at', 'updated_at', 'title', 'featured'];
@@ -74,12 +75,13 @@ export class WorkModel {
       ORDER BY ${safeSortField} ${safeOrder}
       LIMIT ? OFFSET ?
     `;
-    
-    const data = db.prepare(query).all(...whereValues, limit, offset) as Work[];
 
-    data.forEach(work => {
-      work.tag_list = this.getWorkTags(work.id);
-    });
+    const dataParams = [...whereValues, limit, offset];
+    const data = await all<Work>(query, dataParams);
+
+    await Promise.all(data.map(async (work) => {
+      work.tag_list = await WorkModel.getWorkTags(work.id);
+    }));
 
     return {
       success: true,
@@ -91,28 +93,28 @@ export class WorkModel {
     };
   }
 
-  static findById(id: number): Work | undefined {
+  static async findById(id: number): Promise<Work | undefined> {
     const query = 'SELECT * FROM works WHERE id = ?';
-    const work = db.prepare(query).get(id) as Work | undefined;
+    const work = await get<Work>(query, [id]);
     if (work) {
-      work.tag_list = this.getWorkTags(work.id);
+      work.tag_list = await WorkModel.getWorkTags(work.id);
     }
     return work;
   }
 
-  private static getWorkTags(workId: number): Tag[] {
+  private static async getWorkTags(workId: number): Promise<Tag[]> {
     const query = `
       SELECT t.* FROM tags t
       INNER JOIN work_tags wt ON wt.tag_id = t.id
       WHERE wt.work_id = ?
       ORDER BY t.name ASC
     `;
-    return db.prepare(query).all(workId) as Tag[];
+    return all<Tag>(query, [workId]);
   }
 
-  static create(input: CreateWorkInput): Work {
+  static async create(input: CreateWorkInput): Promise<Work> {
     const tagsJson = input.tags ? JSON.stringify(input.tags) : null;
-    
+
     const query = `
       INSERT INTO works (
         title, category, image_url, description, story,
@@ -121,7 +123,7 @@ export class WorkModel {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
-    const result = db.prepare(query).run(
+    const result = await run(query, [
       input.title,
       input.category,
       input.image_url,
@@ -137,13 +139,13 @@ export class WorkModel {
       input.featured ? 1 : 0,
       input.status || 'active',
       tagsJson
-    );
+    ]);
 
-    return this.findById(result.lastInsertRowid as number)!;
+    return (await WorkModel.findById(result.lastInsertRowid as number))!;
   }
 
-  static update(id: number, input: UpdateWorkInput): Work | undefined {
-    const existing = this.findById(id);
+  static async update(id: number, input: UpdateWorkInput): Promise<Work | undefined> {
+    const existing = await WorkModel.findById(id);
     if (!existing) return undefined;
 
     const updates: string[] = [];
@@ -218,40 +220,36 @@ export class WorkModel {
       values.push(JSON.stringify(input.tags));
     }
 
-    updates.push("updated_at = datetime('now')");
+    updates.push('updated_at = NOW()');
     values.push(id);
 
     const query = `UPDATE works SET ${updates.join(', ')} WHERE id = ?`;
-    db.prepare(query).run(...values);
+    await run(query, values);
 
-    return this.findById(id);
+    return WorkModel.findById(id);
   }
 
-  static delete(id: number): boolean {
+  static async delete(id: number): Promise<boolean> {
     const query = 'DELETE FROM works WHERE id = ?';
-    const result = db.prepare(query).run(id);
+    const result = await run(query, [id]);
     return result.changes > 0;
   }
 
-  static reorder(orders: ReorderItem[]): void {
-    const updateOrder = db.prepare('UPDATE works SET sort_order = ? WHERE id = ?');
-    
-    const transaction = db.transaction((items: ReorderItem[]) => {
-      for (const item of items) {
-        updateOrder.run(item.sort_order, item.id);
+  static async reorder(orders: ReorderItem[]): Promise<void> {
+    await transaction(async (conn) => {
+      for (const item of orders) {
+        await conn.execute('UPDATE works SET sort_order = ? WHERE id = ?', [item.sort_order, item.id]);
       }
     });
-
-    transaction(orders);
   }
 
-  static getFeatured(): Work[] {
+  static async getFeatured(): Promise<Work[]> {
     const query = 'SELECT * FROM works WHERE featured = 1 AND status = \'active\' ORDER BY sort_order ASC';
-    return db.prepare(query).all() as Work[];
+    return all<Work>(query);
   }
 
-  static getByCategory(category: string): Work[] {
+  static async getByCategory(category: string): Promise<Work[]> {
     const query = 'SELECT * FROM works WHERE category = ? AND status = \'active\' ORDER BY sort_order ASC';
-    return db.prepare(query).all(category) as Work[];
+    return all<Work>(query, [category]);
   }
 }

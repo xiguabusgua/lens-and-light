@@ -1,8 +1,8 @@
-import db from '../config/database.js';
+import { get, all, run } from '../config/database.js';
 import { Category, CreateCategoryInput, UpdateCategoryInput } from '../types/index.js';
 
 export class CategoryModel {
-  static findAll(): Category[] {
+  static async findAll(): Promise<Category[]> {
     const query = `
       SELECT c.*, COUNT(w.id) as work_count
       FROM categories c
@@ -10,36 +10,36 @@ export class CategoryModel {
       GROUP BY c.id
       ORDER BY c.sort_order ASC
     `;
-    return db.prepare(query).all() as Category[];
+    return await all<Category>(query);
   }
 
-  static findById(id: number): Category | undefined {
+  static async findById(id: number): Promise<Category | undefined> {
     const query = 'SELECT * FROM categories WHERE id = ?';
-    return db.prepare(query).get(id) as Category | undefined;
+    return await get<Category>(query, [id]);
   }
 
-  static findBySlug(slug: string): Category | undefined {
+  static async findBySlug(slug: string): Promise<Category | undefined> {
     const query = 'SELECT * FROM categories WHERE slug = ?';
-    return db.prepare(query).get(slug) as Category | undefined;
+    return await get<Category>(query, [slug]);
   }
 
-  static create(input: CreateCategoryInput): Category {
+  static async create(input: CreateCategoryInput): Promise<Category> {
     const query = `
       INSERT INTO categories (name, slug, description, icon, sort_order)
       VALUES (?, ?, ?, ?, ?)
     `;
-    const result = db.prepare(query).run(
+    const result = await run(query, [
       input.name,
       input.slug,
       input.description || null,
       input.icon || 'Grid3X3',
       input.sort_order || 0
-    );
-    return this.findById(result.lastInsertRowid as number)!;
+    ]);
+    return (await this.findById(result.lastInsertRowid as number))!;
   }
 
-  static update(id: number, input: UpdateCategoryInput): Category | undefined {
-    const existing = this.findById(id);
+  static async update(id: number, input: UpdateCategoryInput): Promise<Category | undefined> {
+    const existing = await this.findById(id);
     if (!existing) return undefined;
 
     const updates: string[] = [];
@@ -70,13 +70,13 @@ export class CategoryModel {
 
     values.push(id);
     const query = `UPDATE categories SET ${updates.join(', ')} WHERE id = ?`;
-    db.prepare(query).run(...values);
-    return this.findById(id);
+    await run(query, values);
+    return await this.findById(id);
   }
 
-  static delete(id: number): boolean {
+  static async delete(id: number): Promise<boolean> {
     const query = 'DELETE FROM categories WHERE id = ?';
-    const result = db.prepare(query).run(id);
+    const result = await run(query, [id]);
     return result.changes > 0;
   }
 }

@@ -22,15 +22,19 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
 
+const corsOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map(s => s.trim())
+  : ['http://localhost:5173'];
+
 app.use(cors({
-  origin: ['http://localhost:5173'],
+  origin: corsOrigins,
   credentials: true
 }));
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-initializeDatabase();
+await initializeDatabase();
 
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
@@ -52,6 +56,12 @@ app.get('/api/health', (_req, res) => {
     message: 'API 服务运行正常',
     timestamp: new Date().toISOString()
   });
+});
+
+const frontendDir = path.resolve(process.cwd(), '..', 'dist');
+app.use(express.static(frontendDir));
+app.get('*', (_req, res) => {
+  res.sendFile(path.join(frontendDir, 'index.html'));
 });
 
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction): void => {

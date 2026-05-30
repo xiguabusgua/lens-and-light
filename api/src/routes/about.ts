@@ -58,7 +58,7 @@ function writeConfig(data: any) {
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(data, null, 2), 'utf-8');
 }
 
-router.get('/', (_req: Request, res: Response): void => {
+router.get('/', async (_req: Request, res: Response): Promise<void> => {
   try {
     const data = readConfig();
     res.json({ success: true, data });
@@ -68,7 +68,7 @@ router.get('/', (_req: Request, res: Response): void => {
   }
 });
 
-router.put('/', authenticateToken, (req: Request, res: Response): void => {
+router.put('/', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
     const data = req.body;
     

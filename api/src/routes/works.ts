@@ -18,7 +18,7 @@ const publicLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-router.get('/', publicLimiter, (req: Request, res: Response): void => {
+router.get('/', publicLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const {
       category,
@@ -32,7 +32,7 @@ router.get('/', publicLimiter, (req: Request, res: Response): void => {
       tag
     } = req.query;
 
-    const result = WorkModel.findAll({
+    const result = await WorkModel.findAll({
       category: category as string,
       featured: featured as string,
       status: status as string,
@@ -51,7 +51,7 @@ router.get('/', publicLimiter, (req: Request, res: Response): void => {
   }
 });
 
-router.get('/:id', publicLimiter, (req: Request, res: Response): void => {
+router.get('/:id', publicLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const id = parseInt(req.params.id);
 
@@ -60,7 +60,7 @@ router.get('/:id', publicLimiter, (req: Request, res: Response): void => {
       return;
     }
 
-    const work = WorkModel.findById(id);
+    const work = await WorkModel.findById(id);
 
     if (!work) {
       res.status(404).json({ error: '作品不存在' });
@@ -77,7 +77,7 @@ router.get('/:id', publicLimiter, (req: Request, res: Response): void => {
   }
 });
 
-router.post('/', authenticateToken, validateInputLengths, (req: Request, res: Response): void => {
+router.post('/', authenticateToken, validateInputLengths, async (req: Request, res: Response): Promise<void> => {
   try {
     const input: CreateWorkInput = req.body;
 
@@ -90,11 +90,11 @@ router.post('/', authenticateToken, validateInputLengths, (req: Request, res: Re
 
     const { tag_ids, ...workInput } = input;
 
-    const newWork = WorkModel.create(workInput);
+    const newWork = await WorkModel.create(workInput);
 
     if (tag_ids && Array.isArray(tag_ids) && tag_ids.length > 0) {
-      TagModel.setWorkTags(newWork.id, tag_ids as number[]);
-      newWork.tag_list = TagModel.getWorkTags(newWork.id);
+      await TagModel.setWorkTags(newWork.id, tag_ids as number[]);
+      newWork.tag_list = await TagModel.getWorkTags(newWork.id);
     }
 
     res.status(201).json({
@@ -108,7 +108,7 @@ router.post('/', authenticateToken, validateInputLengths, (req: Request, res: Re
   }
 });
 
-router.put('/:id', authenticateToken, validateInputLengths, (req: Request, res: Response): void => {
+router.put('/:id', authenticateToken, validateInputLengths, async (req: Request, res: Response): Promise<void> => {
   try {
     const id = parseInt(req.params.id);
 
@@ -119,7 +119,7 @@ router.put('/:id', authenticateToken, validateInputLengths, (req: Request, res: 
 
     const { tag_ids, ...workInput } = req.body as UpdateWorkInput & { tag_ids?: number[] };
 
-    const updatedWork = WorkModel.update(id, workInput);
+    const updatedWork = await WorkModel.update(id, workInput);
 
     if (!updatedWork) {
       res.status(404).json({ error: '作品不存在' });
@@ -127,8 +127,8 @@ router.put('/:id', authenticateToken, validateInputLengths, (req: Request, res: 
     }
 
     if (tag_ids !== undefined) {
-      TagModel.setWorkTags(id, tag_ids);
-      updatedWork.tag_list = TagModel.getWorkTags(id);
+      await TagModel.setWorkTags(id, tag_ids);
+      updatedWork.tag_list = await TagModel.getWorkTags(id);
     }
 
     res.json({
@@ -142,7 +142,7 @@ router.put('/:id', authenticateToken, validateInputLengths, (req: Request, res: 
   }
 });
 
-router.delete('/:id', authenticateToken, (req: Request, res: Response): void => {
+router.delete('/:id', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
     const id = parseInt(req.params.id);
 
@@ -151,7 +151,7 @@ router.delete('/:id', authenticateToken, (req: Request, res: Response): void => 
       return;
     }
 
-    const work = WorkModel.findById(id);
+    const work = await WorkModel.findById(id);
 
     if (!work) {
       res.status(404).json({ error: '作品不存在' });
@@ -176,7 +176,7 @@ router.delete('/:id', authenticateToken, (req: Request, res: Response): void => 
       }
     }
 
-    WorkModel.delete(id);
+    await WorkModel.delete(id);
 
     res.json({
       success: true,
@@ -188,7 +188,7 @@ router.delete('/:id', authenticateToken, (req: Request, res: Response): void => 
   }
 });
 
-router.put('/reorder', authenticateToken, (req: Request, res: Response): void => {
+router.put('/reorder', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
     const { orders }: { orders: ReorderItem[] } = req.body;
 
@@ -206,7 +206,7 @@ router.put('/reorder', authenticateToken, (req: Request, res: Response): void =>
       }
     }
 
-    WorkModel.reorder(orders);
+    await WorkModel.reorder(orders);
 
     res.json({
       success: true,

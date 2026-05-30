@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import rateLimit from 'express-rate-limit';
 import { authenticateToken } from '../middleware/auth.js';
-import Database from 'better-sqlite3';
+import { get, all, run } from '../config/database.js';
 
 const router = Router();
 const UPLOAD_DIR = path.join(process.cwd(), 'uploads');
@@ -16,12 +16,7 @@ const mediaUploadLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-const DB_PATH = path.join(process.cwd(), 'data', 'database.sqlite');
 const ABOUT_FILE = path.join(process.cwd(), 'data', 'about.json');
-
-function getDb() {
-  return new Database(DB_PATH, { readonly: true });
-}
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
@@ -61,7 +56,7 @@ interface MediaItem {
   source?: string;
 }
 
-router.get('/', (_req: Request, res: Response): void => {
+router.get('/', async (_req: Request, res: Response): Promise<void> => {
   try {
     const items: MediaItem[] = [];
     const seenUrls = new Set<string>();
@@ -89,11 +84,8 @@ router.get('/', (_req: Request, res: Response): void => {
       });
     }
 
-    let db;
     try {
-      db = getDb();
-      
-      const works = db.prepare('SELECT id, image_url, thumbnail_url, title FROM works').all() as any[];
+      const works = await all('SELECT id, image_url, thumbnail_url, title FROM works') as any[];
 
       works.forEach((work: any) => {
         [work.image_url, work.thumbnail_url].forEach((url: string) => {
@@ -111,7 +103,7 @@ router.get('/', (_req: Request, res: Response): void => {
         });
       });
 
-      const albums = db.prepare('SELECT id, cover_url, title FROM albums').all() as any[];
+      const albums = await all('SELECT id, cover_url, title FROM albums') as any[];
 
       albums.forEach((album: any) => {
         const url = album.cover_url;
@@ -127,8 +119,6 @@ router.get('/', (_req: Request, res: Response): void => {
           });
         }
       });
-
-      db.close();
     } catch {}
 
     if (fs.existsSync(ABOUT_FILE)) {
@@ -183,7 +173,7 @@ router.post('/upload', authenticateToken, mediaUploadLimiter, upload.single('fil
   }
 });
 
-router.delete('/:id', authenticateToken, (req: Request, res: Response): void => {
+router.delete('/:id', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
 
@@ -199,13 +189,10 @@ router.delete('/:id', authenticateToken, (req: Request, res: Response): void => 
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
 
-      let db;
       try {
-        db = new Database(DB_PATH);
         const imageUrl = `/uploads/${safeFilename}`;
-        db.prepare("UPDATE works SET image_url = NULL WHERE image_url = ?").run(imageUrl);
-        db.prepare("UPDATE works SET thumbnail_url = NULL WHERE thumbnail_url = ?").run(imageUrl);
-        db.close();
+        await run("UPDATE works SET image_url = NULL WHERE image_url = ?", [imageUrl]);
+        await run("UPDATE works SET thumbnail_url = NULL WHERE thumbnail_url = ?", [imageUrl]);
       } catch {}
 
       res.json({ success: true, message: '删除成功' });

@@ -14,10 +14,10 @@ const publicLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-router.get('/', publicLimiter, (req: Request, res: Response): void => {
+router.get('/', publicLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const { search } = req.query;
-    const tags = TagModel.findAll(search as string);
+    const tags = await TagModel.findAll(search as string);
     res.json({
       success: true,
       data: tags
@@ -28,7 +28,7 @@ router.get('/', publicLimiter, (req: Request, res: Response): void => {
   }
 });
 
-router.post('/', authenticateToken, (req: Request, res: Response): void => {
+router.post('/', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
     const input: CreateTagInput = req.body;
 
@@ -37,7 +37,7 @@ router.post('/', authenticateToken, (req: Request, res: Response): void => {
       return;
     }
 
-    const tag = TagModel.create(input);
+    const tag = await TagModel.create(input);
     if (!tag) {
       res.status(409).json({ error: '标签已存在' });
       return;
@@ -54,7 +54,7 @@ router.post('/', authenticateToken, (req: Request, res: Response): void => {
   }
 });
 
-router.put('/:id', authenticateToken, (req: Request, res: Response): void => {
+router.put('/:id', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
     const id = parseInt(req.params.id);
 
@@ -64,7 +64,7 @@ router.put('/:id', authenticateToken, (req: Request, res: Response): void => {
     }
 
     const input: UpdateTagInput = req.body;
-    const updated = TagModel.update(id, input);
+    const updated = await TagModel.update(id, input);
 
     if (!updated) {
       res.status(404).json({ error: '标签不存在' });
@@ -82,7 +82,7 @@ router.put('/:id', authenticateToken, (req: Request, res: Response): void => {
   }
 });
 
-router.delete('/:id', authenticateToken, (req: Request, res: Response): void => {
+router.delete('/:id', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
     const id = parseInt(req.params.id);
 
@@ -91,13 +91,13 @@ router.delete('/:id', authenticateToken, (req: Request, res: Response): void => 
       return;
     }
 
-    const tag = TagModel.findById(id);
+    const tag = await TagModel.findById(id);
     if (!tag) {
       res.status(404).json({ error: '标签不存在' });
       return;
     }
 
-    TagModel.delete(id);
+    await TagModel.delete(id);
 
     res.json({
       success: true,

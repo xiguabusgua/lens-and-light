@@ -14,9 +14,9 @@ const publicLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-router.get('/', publicLimiter, (_req: Request, res: Response): void => {
+router.get('/', publicLimiter, async (_req: Request, res: Response): Promise<void> => {
   try {
-    const categories = CategoryModel.findAll();
+    const categories = await CategoryModel.findAll();
     res.json({
       success: true,
       data: categories
@@ -27,7 +27,7 @@ router.get('/', publicLimiter, (_req: Request, res: Response): void => {
   }
 });
 
-router.post('/', authenticateToken, (req: Request, res: Response): void => {
+router.post('/', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
     const input: CreateCategoryInput = req.body;
 
@@ -36,13 +36,13 @@ router.post('/', authenticateToken, (req: Request, res: Response): void => {
       return;
     }
 
-    const existing = CategoryModel.findBySlug(input.slug);
+    const existing = await CategoryModel.findBySlug(input.slug);
     if (existing) {
       res.status(409).json({ error: '分类 slug 已存在' });
       return;
     }
 
-    const category = CategoryModel.create(input);
+    const category = await CategoryModel.create(input);
 
     res.status(201).json({
       success: true,
@@ -55,7 +55,7 @@ router.post('/', authenticateToken, (req: Request, res: Response): void => {
   }
 });
 
-router.put('/:id', authenticateToken, (req: Request, res: Response): void => {
+router.put('/:id', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
     const id = parseInt(req.params.id);
 
@@ -65,7 +65,7 @@ router.put('/:id', authenticateToken, (req: Request, res: Response): void => {
     }
 
     const input: UpdateCategoryInput = req.body;
-    const updated = CategoryModel.update(id, input);
+    const updated = await CategoryModel.update(id, input);
 
     if (!updated) {
       res.status(404).json({ error: '分类不存在' });
@@ -83,7 +83,7 @@ router.put('/:id', authenticateToken, (req: Request, res: Response): void => {
   }
 });
 
-router.delete('/:id', authenticateToken, (req: Request, res: Response): void => {
+router.delete('/:id', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
     const id = parseInt(req.params.id);
 
@@ -92,13 +92,13 @@ router.delete('/:id', authenticateToken, (req: Request, res: Response): void => 
       return;
     }
 
-    const category = CategoryModel.findById(id);
+    const category = await CategoryModel.findById(id);
     if (!category) {
       res.status(404).json({ error: '分类不存在' });
       return;
     }
 
-    CategoryModel.delete(id);
+    await CategoryModel.delete(id);
 
     res.json({
       success: true,

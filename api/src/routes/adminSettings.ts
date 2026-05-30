@@ -3,7 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { authenticateToken } from '../middleware/auth.js';
-import db from '../config/database.js';
+import { get, all, run } from '../config/database.js';
 
 const router = Router();
 
@@ -27,8 +27,8 @@ const DEFAULT_THEME = {
   backgroundImage: '',
 };
 
-function getTheme(): Record<string, string> {
-  const rows = db.prepare('SELECT key, value FROM admin_settings').all() as { key: string; value: string }[];
+async function getTheme(): Promise<Record<string, string>> {
+  const rows = await all('SELECT `key`, value FROM admin_settings') as { key: string; value: string }[];
   const theme = { ...DEFAULT_THEME };
   for (const row of rows) {
     if (row.key.startsWith('theme_')) {
@@ -39,28 +39,25 @@ function getTheme(): Record<string, string> {
   return theme;
 }
 
-function updateSettings(settings: Record<string, string>): void {
-  const upsert = db.prepare(
-    'INSERT INTO admin_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value'
-  );
-  const transaction = db.transaction((items: [string, string][]) => {
-    for (const [key, value] of items) {
-      upsert.run(key, value);
-    }
-  });
+async function updateSettings(settings: Record<string, string>): Promise<void> {
   const entries: [string, string][] = Object.entries(settings).map(([k, v]) => [`theme_${k}`, v]);
-  transaction(entries);
+  for (const [key, value] of entries) {
+    await run(
+      'INSERT INTO admin_settings (`key`, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)',
+      [key, value]
+    );
+  }
 }
 
-router.get('/theme', (_req: Request, res: Response): void => {
+router.get('/theme', async (_req: Request, res: Response): Promise<void> => {
   try {
-    res.json({ success: true, data: getTheme() });
+    res.json({ success: true, data: await getTheme() });
   } catch (error) {
     res.status(500).json({ error: '获取主题设置失败' });
   }
 });
 
-router.put('/theme', authenticateToken, (req: Request, res: Response): void => {
+router.put('/theme', authenticateToken, async (req: Request, res: Response): Promise<void> => {
   try {
     const allowed = [
       'bg', 'card', 'raised', 'table', 'border', 'borderLight',
@@ -73,8 +70,8 @@ router.put('/theme', authenticateToken, (req: Request, res: Response): void => {
         settings[key] = String(req.body[key]);
       }
     }
-    updateSettings(settings);
-    res.json({ success: true, data: getTheme(), message: '主题设置已保存' });
+    await updateSettings(settings);
+    res.json({ success: true, data: await getTheme(), message: '主题设置已保存' });
   } catch (error) {
     res.status(500).json({ error: '保存主题设置失败' });
   }
@@ -103,7 +100,7 @@ router.post('/theme/background', authenticateToken, (req: Request, res: Response
     },
   }).single('image');
 
-  upload(req, res, (err: any) => {
+  upload(req, res, async (err: any) => {
     if (err) {
       res.status(400).json({ error: err.message });
       return;
@@ -112,7 +109,7 @@ router.post('/theme/background', authenticateToken, (req: Request, res: Response
       res.status(400).json({ error: '请选择图片文件' });
       return;
     }
-    updateSettings({ backgroundImage: `/uploads/${req.file.filename}` });
+    await updateSettings({ backgroundImage: `/uploads/${req.file.filename}` });
     res.json({
       success: true,
       data: { backgroundImage: `/uploads/${req.file.filename}` },
