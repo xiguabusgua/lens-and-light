@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { handleApiError } from '@/lib/utils';
 import { AdminInput } from '@/admin/components';
 
 export default function Login() {
@@ -21,8 +22,8 @@ export default function Login() {
       const res = await axios.post('/api/auth/login', { username, password });
       localStorage.setItem('admin_token', res.data.token);
       window.location.href = '/admin/dashboard';
-    } catch (err: any) {
-      setError(err.response?.data?.error || err.message || '登录失败');
+    } catch (err) {
+      setError(handleApiError(err, '登录失败'));
     } finally {
       setLoading(false);
     }

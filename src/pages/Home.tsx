@@ -8,8 +8,7 @@ import { ArrowRight, ChevronDown, Grid3X3, User, Mountain, Camera, Briefcase, Ta
 import { getFeaturedWorks } from '../data/works';
 import type { Work } from '../data/works';
 import { categories } from '../data/categories';
-import { getFullImageUrl, getCategoryLabel } from '@/lib/utils';
-import type { ApiWork } from '@/lib/utils';
+import { getCategoryLabel, type ApiWork } from '@/lib/utils';
 import axios from 'axios';
 import ResponsiveImage from '@/components/ResponsiveImage';
 
@@ -74,7 +73,7 @@ function AnimatedTitle({ text }: { text: string }) {
           key={`${char}-${i}`}
           initial={{ y: Math.random() > 0.5 ? -30 : 30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.35 + i * 0.05, duration: 0.6, type: "spring", stiffness: 150, damping: 15 }}
+          transition={{ delay: 0.35 + i * 0.05, duration: 0.6, type: 'spring', stiffness: 150, damping: 15 }}
           className="inline-block"
         >
           {char === ' ' ? '\u00A0' : char}
@@ -114,7 +113,7 @@ function FloatingParticles({ count = 15 }: { count?: number }) {
             x: [0, p.size, -p.size * 0.5, p.size * 0.5, 0],
             opacity: [0.2, 0.5, 0.3, 0.4, 0.2],
           }}
-          transition={{ duration: p.duration, repeat: Infinity, delay: p.delay, ease: "linear" }}
+          transition={{ duration: p.duration, repeat: Infinity, delay: p.delay, ease: 'linear' }}
         />
       ))}
     </div>
@@ -125,9 +124,9 @@ const heroTextVariants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.18, delayChildren: 0.2 } },
 };
-const tagVariants = { hidden: { opacity: 0, y: 20, filter: "blur(8px)" }, visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.7 } } };
-const descriptionVariants = { hidden: { opacity: 0, y: 20, filter: "blur(6px)" }, visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.7, delay: 0.2 } } };
-const ctaVariants = { hidden: { opacity: 0, scale: 0.9, filter: "blur(4px)" }, visible: { opacity: 1, scale: 1, filter: "blur(0px)", transition: { duration: 0.6, delay: 0.5 } } };
+const tagVariants = { hidden: { opacity: 0, y: 20, filter: 'blur(8px)' }, visible: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.7 } } };
+const descriptionVariants = { hidden: { opacity: 0, y: 20, filter: 'blur(6px)' }, visible: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.7, delay: 0.2 } } };
+const ctaVariants = { hidden: { opacity: 0, scale: 0.9, filter: 'blur(4px)' }, visible: { opacity: 1, scale: 1, filter: 'blur(0px)', transition: { duration: 0.6, delay: 0.5 } } };
 
 interface HeroSlide {
   id: number;
@@ -154,15 +153,9 @@ function HeroSection() {
     axios.get('/api/hero-slides', { params: { status: 'active', sort: 'sort_order' } })
       .then(res => {
         const data = res.data.data || [];
-        if (data.length > 0) {
-          setHeroSlides(data);
-        } else {
-          setHeroSlides([]);
-        }
+        setHeroSlides(data.length > 0 ? data : []);
       })
-      .catch(() => {
-        setHeroSlides([]);
-      })
+      .catch(() => { setHeroSlides([]); })
       .finally(() => setHeroLoading(false));
   }, []);
 
@@ -176,7 +169,8 @@ function HeroSection() {
 
   if (heroSlides.length === 0) return null;
 
-  const allModules = [Autoplay, Pagination, Keyboard, EffectFade, EffectCoverflow, EffectCube, EffectFlip, EffectCards];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const allModules: any[] = [Autoplay, Pagination, Keyboard, EffectFade, EffectCoverflow, EffectCube, EffectFlip, EffectCards];
 
   return (
     <section className="relative h-screen w-full overflow-hidden">
@@ -206,15 +200,16 @@ function HeroSection() {
   );
 }
 
-function HeroSwiper({ 
-  slides, 
-  slide, 
+function HeroSwiper({
+  slides,
+  slide,
   modules,
-  parallaxBg, 
-  parallaxText 
-}: { 
+  parallaxBg,
+  parallaxText
+}: {
   slides: HeroSlide[];
   slide: HeroSlide;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   modules: any[];
   parallaxBg: number;
   parallaxText: number;
@@ -247,7 +242,7 @@ function HeroSwiper({
       {slides.map((s, index) => (
         <SwiperSlide key={s.id || index} className="relative">
           <div className="absolute inset-0" style={{ transform: `translateY(${parallaxBg}px)` }}>
-            <ResponsiveImage src={s.image_url} alt={s.title} className="w-full h-full object-cover" loading={index === 0 ? "eager" : "lazy"} priority={index === 0} />
+            <ResponsiveImage src={s.image_url} alt={s.title} className="w-full h-full object-cover" loading={index === 0 ? 'eager' : 'lazy'} priority={index === 0} />
           </div>
 
           <div className="absolute inset-0 bg-black/50" />
@@ -285,11 +280,8 @@ function WorksPreview() {
 
   useEffect(() => {
     axios.get('/api/works', { params: { status: 'active', limit: 6 } })
-      .then(res => {
-        setWorks(res.data.data || []);
-      })
-      .catch(err => {
-      })
+      .then(res => { setWorks(res.data.data || []); })
+      .catch(() => { /* silently ignore — works preview is supplementary */ })
       .finally(() => setLoading(false));
   }, []);
 
@@ -308,7 +300,7 @@ function WorksPreview() {
   return (
     <section className="py-24 lg:py-32">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" ref={ref}>
-        <motion.div variants={animationConfig.fadeUp} initial="hidden" animate={inView ? "visible" : "hidden"} className="mb-16">
+        <motion.div variants={animationConfig.fadeUp} initial="hidden" animate={inView ? 'visible' : 'hidden'} className="mb-16">
           <span className="text-accent font-ui uppercase tracking-widest text-sm">精选</span>
           <h2 className="font-display text-4xl lg:text-5xl font-semibold text-secondary mt-3 mb-4">作品集</h2>
           <div className="w-16 h-[1px] bg-accent mb-6" />
@@ -320,7 +312,7 @@ function WorksPreview() {
             <motion.div
               variants={animationConfig.staggerContainer}
               initial="hidden"
-              animate={inView ? "visible" : "hidden"}
+              animate={inView ? 'visible' : 'hidden'}
               className="grid grid-cols-2 md:grid-cols-3 gap-4 lg:gap-6"
             >
               {works.map((work: ApiWork, index: number) => (
@@ -362,7 +354,7 @@ function WorksPreview() {
               ))}
             </motion.div>
 
-            <motion.div variants={animationConfig.fadeUp} initial="hidden" animate={inView ? "visible" : "hidden"} className="text-center mt-16">
+            <motion.div variants={animationConfig.fadeUp} initial="hidden" animate={inView ? 'visible' : 'hidden'} className="text-center mt-16">
               <Link to="/portfolio" className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-accent text-primary font-ui text-sm font-semibold uppercase tracking-widest hover:bg-accent-light shadow-lg hover:shadow-accent/25 transition-all duration-500 rounded-sm">
                 查看全部作品 <ArrowRight className="w-4 h-4" />
               </Link>
@@ -385,16 +377,16 @@ function CategoryNavigation() {
   return (
     <section className="py-24 lg:py-32">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" ref={ref}>
-        <motion.div variants={animationConfig.fadeUp} initial="hidden" animate={inView ? "visible" : "hidden"} className="text-center mb-16">
+        <motion.div variants={animationConfig.fadeUp} initial="hidden" animate={inView ? 'visible' : 'hidden'} className="text-center mb-16">
           <span className="text-accent font-ui uppercase tracking-widest text-sm">浏览</span>
           <h2 className="font-display text-4xl lg:text-5xl font-semibold text-secondary mt-3 mb-4">按主题分类</h2>
           <div className="w-16 h-[1px] bg-accent mx-auto mb-6" />
         </motion.div>
 
-        <motion.div 
-          variants={animationConfig.staggerContainer} 
-          initial="hidden" 
-          animate={inView ? "visible" : "hidden"}
+        <motion.div
+          variants={animationConfig.staggerContainer}
+          initial="hidden"
+          animate={inView ? 'visible' : 'hidden'}
           className="flex flex-wrap justify-center gap-4"
         >
           {categories.filter(c => c.id !== 'all').map((cat) => (

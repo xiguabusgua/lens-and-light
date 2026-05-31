@@ -72,6 +72,24 @@ export function handleApiError(error: unknown, fallback: string = '请求失败�
   return fallback
 }
 
+export function formatDate(dateStr: string, includeTime = false): string {
+  const d = new Date(dateStr);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  if (includeTime) {
+    const h = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${y}-${m}-${day} ${h}:${min}`;
+  }
+  return `${y}-${m}-${day}`;
+}
+
+export function formatMonth(dateStr: string): string {
+  const d = new Date(dateStr);
+  return `${d.getFullYear()}年${d.getMonth() + 1}月`;
+}
+
 const RESPONSIVE_WIDTHS = [400, 800, 1200] as const;
 
 export function getResponsiveImage(rawUrl: string | null): {

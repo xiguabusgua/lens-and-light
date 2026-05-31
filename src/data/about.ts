@@ -32,7 +32,7 @@ export const aboutData: AboutData = {
 
 对我而言，摄影不仅是一种技术，更是一种观看世界的方式——它教会我慢下来，去发现那些被忽略的美好，去感受当下最真实的情感流动。`,
   philosophy: '"摄影是在一瞬间内，同时认识到事件本身的意义，以及组织这一事件的形式结构。 —— 亨利·卡蒂埃-布列松"',
-  avatarUrl: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Professional%20photographer%20portrait%2C%20middle-aged%20Asian%20man%20with%20camera%2C%20confident%20expression%2C%20studio%20lighting%2C%20editorial%20style%2C%20warm%20tones&image_size=portrait_4_3',
+  avatarUrl: 'https://picsum.photos/seed/photographer-portrait/400/533',
   stats: {
     years: 15,
     projects: 1200,

@@ -72,7 +72,7 @@ export default function AboutManagement() {
     }
   };
 
-  const updateField = (field: string, value: any) => {
+  const updateField = (field: string, value: string) => {
     if (!data) return;
     setData({ ...data, [field]: value });
   };

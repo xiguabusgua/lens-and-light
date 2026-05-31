@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Pause, ChevronLeft, ChevronRight, Calendar, Clock, Camera, Tag as TagIcon, Loader2, Search, X, AlertCircle } from 'lucide-react';
 import axios from 'axios';
-import { cn, getFullImageUrl, getCategoryLabel, handleApiError, type ApiWork } from '@/lib/utils';
+import { cn, getFullImageUrl, getCategoryLabel, handleApiError, formatDate, formatMonth, type ApiWork } from '@/lib/utils';
 import { getLayoutConfig, type LayoutMode } from '@/config/layout';
 import ResponsiveImage from '@/components/ResponsiveImage';
 
@@ -294,21 +294,6 @@ function SingleLayout({ filteredWorks, gap }: { filteredWorks: Work[]; gap: numb
   );
 }
 
-function formatDateStr(dateStr: string): string {
-  const d = new Date(dateStr);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-function formatMonth(dateStr: string): string {
-  const d = new Date(dateStr);
-  const y = d.getFullYear();
-  const m = d.getMonth() + 1;
-  return `${y}年${m}月`;
-}
-
 function TimelineLayout({ filteredWorks }: { filteredWorks: Work[] }) {
   const sorted = [...filteredWorks].sort((a, b) =>
     new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -370,7 +355,7 @@ function TimelineLayout({ filteredWorks }: { filteredWorks: Work[] }) {
                       <div>
                         <h4 style={{ fontSize: '14px', color: '#fff', fontFamily: 'Georgia, serif', marginBottom: '2px' }}>{work.title}</h4>
                         <span style={{ fontSize: '10px', color: '#888', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Clock size={10} /> {formatDateStr(work.created_at)}
+                          <Clock size={10} /> {formatDate(work.created_at)}
                         </span>
                       </div>
                       <span style={{
@@ -488,17 +473,23 @@ export default function Portfolio() {
   };
 
   useEffect(() => {
-    Promise.all([
-      axios.get('/api/categories'),
-      axios.get('/api/tags')
-    ]).then(([catRes, tagRes]) => {
-      setCategories(catRes.data.data || []);
-      const tagData = (tagRes.data.data || []).map((t: any) => ({
-        ...t,
-        work_count: t.work_count || 0
-      }));
-      setTags(tagData);
-    }).catch(() => {});
+    const fetchMeta = async () => {
+      try {
+        const [catRes, tagRes] = await Promise.all([
+          axios.get('/api/categories'),
+          axios.get('/api/tags')
+        ]);
+        setCategories(catRes.data.data || []);
+        const tagData = (tagRes.data.data || []).map((t: { id: number; name: string; slug: string; work_count?: number }) => ({
+          ...t,
+          work_count: t.work_count || 0
+        }));
+        setTags(tagData);
+      } catch {
+        // categories/tags are supplementary — works still load normally
+      }
+    };
+    fetchMeta();
   }, []);
 
   const filteredWorks = useMemo(() => {

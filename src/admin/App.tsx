@@ -49,13 +49,37 @@ function Login() {
   }, [token, navigate]);
 
   const [LoginComp, setLoginComp] = useState<React.ComponentType | null>(null);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    import('./pages/Login').then(m => setLoginComp(() => m.default));
+    import('./pages/Login').then(m => {
+      setLoginComp(() => m.default);
+      setLoading(false);
+    });
   }, []);
-  
-  if (!token && LoginComp) return <LoginComp />;
+
   if (token) return null;
-  return <div style={{ minHeight: '100vh', background: 'var(--admin-bg)' }} />;
+  if (loading || !LoginComp) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: 'var(--admin-bg)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{
+          width: 32, height: 32,
+          border: '2px solid rgba(201,169,110,0.3)',
+          borderTopColor: '#c9a96e',
+          borderRadius: '50%',
+          animation: 'spin 0.8s linear infinite'
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+  return <LoginComp />;
 }
 
 function AdminOutlet() { return <Outlet />; }
@@ -128,7 +152,10 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
     navigate('/admin/login');
   };
 
-  const navItems = [
+  type NavChild = { to: string; icon: React.ElementType; label: string };
+type NavItem = { to: string; icon: React.ElementType; label: string } | { icon: React.ElementType; label: string; to: string; children: NavChild[] };
+
+  const navItems: NavItem[] = [
     { to: '/admin/dashboard', icon: LayoutDashboard, label: '仪表盘' },
     {
       icon: Images,
@@ -201,7 +228,7 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
           {navItems.map(item => {
             const Icon = item.icon;
             if ('children' in item) {
-              const group = item as any;
+              const group = item as NavItem & { children: NavChild[] };
               const isActive = location.pathname?.startsWith(group.to);
               return (
                 <div key={group.label}>
@@ -233,7 +260,7 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
                   </button>
                   {worksMenuOpen && open && (
                     <div style={{ paddingLeft: '12px', marginTop: '2px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      {group.children.map((child: any) => {
+                      {group.children.map((child: NavChild) => {
                         const ChildIcon = child.icon;
                         return (
                           <NavLink
@@ -265,7 +292,7 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
                 </div>
               );
             }
-            const single = item as any;
+            const single = item as NavItem;
             return (
               <NavLink
                 key={single.to}
