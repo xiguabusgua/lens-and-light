@@ -1,21 +1,23 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Plus, 
-  Edit2, 
-  Trash2, 
-  Image, 
-  Eye, 
-  EyeOff, 
-  ArrowUp, 
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  Image,
+  Eye,
+  EyeOff,
+  ArrowUp,
   ArrowDown,
   Loader2,
   AlertCircle,
   X,
   Settings,
-  Save
+  Save,
+  FolderOpen
 } from 'lucide-react';
 import axios from 'axios';
+import MediaPicker from '@/admin/components/MediaPicker';
 
 interface HeroSlide {
   id: number;
@@ -66,6 +68,7 @@ function SlideForm({
     autoplay_delay: slide?.autoplay_delay || 5000,
     is_active: slide?.is_active !== undefined ? slide.is_active : 1,
   });
+  const [showPicker, setShowPicker] = useState(false);
 
   return (
     <motion.div
@@ -113,15 +116,25 @@ function SlideForm({
 
         <div>
           <label className="block text-[13px] font-medium text-admin-text-dim mb-1.5">
-            图片 URL <span className="text-red-400">*</span>
+            图片 <span className="text-red-400">*</span>
           </label>
-          <input
-            type="text"
-            value={formData.image_url}
-            onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-            className="w-full px-3 py-2 bg-admin-raised border border-admin-border-light rounded-lg text-admin-text text-sm outline-none focus:border-admin-accent transition-colors"
-            placeholder="https://picsum.photos/seed/example/1920/1280"
-          />
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={formData.image_url}
+              onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+              className="flex-1 px-3 py-2 bg-admin-raised border border-admin-border-light rounded-lg text-admin-text text-sm outline-none focus:border-admin-accent transition-colors"
+              placeholder="https://..."
+            />
+            <button
+              type="button"
+              onClick={() => setShowPicker(true)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-admin-raised border border-admin-border-light rounded-lg text-admin-text text-sm hover:border-admin-accent hover:text-admin-accent transition-colors shrink-0"
+            >
+              <FolderOpen size={14} />
+              选择图片
+            </button>
+          </div>
           {formData.image_url && (
             <div className="mt-2 rounded-lg overflow-hidden border border-admin-border-light max-h-48">
               <img
@@ -131,6 +144,13 @@ function SlideForm({
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
             </div>
+          )}
+          {showPicker && (
+            <MediaPicker
+              value={formData.image_url}
+              onChange={(url) => setFormData({ ...formData, image_url: url })}
+              onClose={() => setShowPicker(false)}
+            />
           )}
         </div>
 

@@ -1,7 +1,8 @@
 import dotenv from 'dotenv';
-import app from './app.js';
+import path from 'path';
+dotenv.config({ path: path.join(process.cwd(), '.env') });
 
-dotenv.config();
+import app from './app.js';
 
 const requiredEnvVars = ['JWT_SECRET', 'ADMIN_USERNAME', 'ADMIN_PASSWORD'];
 const missing = requiredEnvVars.filter(v => !process.env[v]);
@@ -13,7 +14,7 @@ if (missing.length > 0) {
 
 const PORT = process.env.PORT || 3002;
 
-app.listen(PORT, () => {
+await app.listen(PORT, () => {
   console.log(`
 🚀 摄影作品集管理 API 服务已启动！
 📍 地址: http://localhost:${PORT}

@@ -1,5 +1,8 @@
 User-agent: *
 Allow: /
-Disallow: /admin/
 
-Sitemap: https://lensandlight.com/sitemap.xml
+# Sitemap
+Sitemap: https://www.52akuya.asia/sitemap.xml
+
+# Disallow admin area
+Disallow: /admin/
