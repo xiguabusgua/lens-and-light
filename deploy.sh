@@ -93,6 +93,7 @@ deploy_all() {
         cd "$APIROOT"
         git pull origin main
         npm install --production
+        npm run build
         pm2 restart lens-api || pm2 start /www/wwwroot/lens-and-light-api/ecosystem.config.cjs --name lens-api
     fi
 
@@ -120,6 +121,7 @@ deploy_backend() {
     cd "$APIROOT"
     git pull origin main
     npm install --production
+    npm run build
     pm2 restart lens-api || pm2 start /www/wwwroot/lens-and-light-api/ecosystem.config.cjs --name lens-api
     log_info "后端部署完成！"
 }
