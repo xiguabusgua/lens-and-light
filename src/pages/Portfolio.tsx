@@ -36,6 +36,7 @@ function WorkCard({ work, className, style }: { work: Work; className?: string; 
       <ResponsiveImage
         src={work.thumbnail_url || work.image_url}
         alt={work.title}
+        blurSrc={work.thumbnail_url}
         loading="lazy"
         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         draggable={false}

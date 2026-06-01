@@ -335,11 +335,13 @@ export default function WorkDetail() {
                 <ResponsiveImage
                   src={work.image_url}
                   alt={work.title}
+                  blurSrc={work.thumbnail_url}
                   className="w-full h-full object-contain rounded-sm"
                   onLoad={() => setImageLoaded(true)}
                   style={{
                     opacity: imageLoaded ? 1 : 0,
                     transform: imageLoaded ? 'scale(1)' : 'scale(0.98)',
+                    transition: 'opacity 0.4s ease, transform 0.4s ease',
                   }}
                 />
               </motion.div>
