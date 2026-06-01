@@ -1,0 +1,126 @@
+name: 🚀 Deploy to Production
+
+on:
+  # 推送到 main 分支时自动部署
+  push:
+    branches:
+      - main
+  # 也可以手动触发
+  workflow_dispatch:
+    inputs:
+      target:
+        description: '部署目标'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - frontend
+          - backend
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  #------------------------------------------
+  # Job 1: 前端构建
+  #------------------------------------------
+  build-frontend:
+    name: 构建前端
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event.inputs.target == 'all' || github.event.inputs.target == 'frontend'
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 构建前端
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+
+      - name: 上传到服务器
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_SSH_PORT || 22 }}
+          source: "dist/*"
+          target: "/www/wwwroot/lens-and-light"
+          strip_components: 1
+          overwrite: true
+
+  #------------------------------------------
+  # Job 2: 后端构建
+  #------------------------------------------
+  build-backend:
+    name: 构建后端
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event.inputs.target == 'all' || github.event.inputs.target == 'backend'
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: api/package-lock.json
+
+      - name: 安装依赖
+        run: cd api && npm ci
+
+      - name: 上传到服务器
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_SSH_PORT || 22 }}
+          source: "api/*"
+          target: "/www/wwwroot/lens-and-light-api"
+          strip_components: 1
+          overwrite: true
+
+  #------------------------------------------
+  # Job 3: 重启服务（需要在前两步之后）
+  #------------------------------------------
+  restart-services:
+    name: 重启服务
+    runs-on: ubuntu-latest
+    needs: [build-frontend, build-backend]
+    
+    steps:
+      - name: 重启 PM2 服务
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_SSH_PORT || 22 }}
+          script: |
+            cd /www/wwwroot/lens-and-light
+            npm install --production
+            
+            cd /www/wwwroot/lens-and-light-api
+            npm install --production
+            
+            pm2 restart lens-and-light || pm2 start /www/wwwroot/lens-and-light/ecosystem.config.js --name lens-and-light
+            pm2 restart lens-api || pm2 start /www/wwwroot/lens-and-light-api/ecosystem.config.cjs --name lens-api
+            
+            pm2 save
+            echo "=== PM2 状态 ==="
+            pm2 list
